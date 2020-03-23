@@ -1,30 +1,52 @@
 #ifndef CHATROOM_COLORS_H
 #define CHATROOM_COLORS_H
 
-    static const int normal_i = 0;
-    static const int white_i = 30;
-    static const int red_i = 31;
-    static const int green_i = 32;
-    static const int yellow_i = 33;
-    static const int blue_i = 34;
-    static const int magenta_i = 35;
-    static const int cyan_i = 36;
+    // Foreground (text) colors
+    static const int default_f = 39;
+    static const int black_f = 30;
+    static const int red_f = 31;
+    static const int green_f = 32;
+    static const int yellow_f = 33;
+    static const int blue_f = 34;
+    static const int magenta_f = 35;
+    static const int cyan_f = 36;
+    static const int lightgray_f = 37;
+    static const int darkgray_f = 90;
+    static const int lightred_f = 91;
+    static const int lightgreen_f = 92;
+    static const int lightyellow_f = 93;
+    static const int lightblue_f = 94;
+    static const int lightmagenta_f = 95;
+    static const int lightcyan_f = 96;
+    static const int white_f = 97;
 
-    static const char *normal_c = "\033[0m";
-    static const char *white_c = "\033[0;30m";
-    static const char *red_c = "\033[0;31m";
-    static const char *green_c = "\033[0;32m";
-    static const char *yellow_c = "\033[0;33m";
-    static const char *blue_c = "\033[0;34m";
-    static const char *magenta_c = "\033[0;35m";
-    static const char *cyan_c = "\033[0;36m";
+    // Background colors
+    static const int default_b = 39;
+    static const int black_b = 30;
+    static const int red_b = 31;
+    static const int green_b = 32;
+    static const int yellow_b = 33;
+    static const int blue_b = 34;
+    static const int magenta_b = 35;
+    static const int cyan_b = 36;
+    static const int lightgray_b = 37;
+    static const int darkgray_b = 90;
+    static const int lightred_b = 91;
+    static const int lightgreen_b = 92;
+    static const int lightyellow_b = 93;
+    static const int lightblue_b = 94;
+    static const int lightmagenta_b = 95;
+    static const int lightcyan_b = 96;
+    static const int white_b = 97;
 
-    void red(char *text);
-    void green(char *text);
-    void yellow(char *text);
-    void blue(char *text);
-    void magenta(char *text);
-    void cyan(char *text);
-    void custom(int bold, int color, char *text);
+    // text sets
+    static const int bold = 1;
+    static const int dim = 2;
+    static const int underlined = 4;
+    static const int blink = 5;
+    static const int reverse = 7;
+    static const int hidden = 8;
 
-#endif //CHATROOM_COLORS_H
+    void color(char *text, int color, int background, int set);
+
+    #endif //CHATROOM_COLORS_H

@@ -1,31 +1,11 @@
 #include <stdio.h>
 #include "colors.h"
 
+void color(char *text, int color, int background, int set) {
 
-void red(char *text) {
-    printf("%s%s%s", red_c, text, normal_c);
-}
+    if (background == 0)
+        background = 49;
 
-void green(char *text) {
-    printf("%s%s%s", green_c, text, normal_c);
-}
+    printf("\033[%i;%i;%im%s\033[0m", set, background, color, text);
 
-void yellow(char *text) {
-    printf("%s%s%s", yellow_c, text, normal_c);
-}
-
-void blue(char *text) {
-    printf("%s%s%s", blue_c, text, normal_c);
-}
-
-void magenta(char *text) {
-    printf("%s%s%s", magenta_c, text, normal_c);
-}
-
-void cyan(char *text) {
-    printf("%s%s%s\n", cyan_c, text, normal_c);
-}
-
-void custom(int bold, int color, char *text) {
-    printf("\033[%i;%im%s\033[0m", bold, color, text);
 }
