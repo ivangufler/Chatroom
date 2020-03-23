@@ -3,17 +3,16 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-
-
 #include <stdio.h>
-#include <sys/wait.h>
+
+#include "../colors.h"
 
 #define PORT 23456
 
 int main (int argc, char *argv[]) {
 
     if (argc < 2) {
-        printf("Please enter an IP address: ./client [ip adress]\n");
+        custom(1, red_i, "Please enter an IP address: ./client [ip adress]\n");
         exit(0);
     }
 
@@ -44,27 +43,43 @@ int main (int argc, char *argv[]) {
 
     send(clientsock, name, strlen(name), FLAGS);
 
-    if (fork() == 0) {
-        char buffer[1024] = { 0 };
-        int ret = recv(clientsock, buffer, sizeof(buffer)-1, FLAGS);
-        printf("%s\n", buffer);
+    int pid = fork();
+    char exit[] = "/exit";
+
+    if (pid == 0) {
+
+        while (1) {
+            char message[1024] = { 0 };
+            fgets(message, sizeof(message), stdin);
+            *strchr(message, '\n') = '\0';
+
+            if (strcmp(exit, message) == 0) {
+                send(clientsock, exit, strlen(exit), FLAGS);
+                break;
+            }
+
+            send(clientsock, message, strlen(message), FLAGS);
+        }
+
+
     }
 
-   else {
+    else {
+        int status;
+        while(1) {
 
-       char exit[] = "exit";
+            char buffer[1024] = {0};
+            recv(clientsock, buffer, sizeof(buffer), FLAGS);
 
-       while(1) {
+            if (strcmp(exit, buffer) == 0) {
+                break;
+            }
 
-           char message[1024] = { 0 };
-           fgets(message, sizeof(message)-1, stdin);
-           *strchr(message, '\n') = '\0';
-
-           if (strcmp(exit, message) == 0) {
-               return 0;
-           }
-
-           send(clientsock, message, strlen(message), FLAGS);
-       }
+            printf("%s\n", buffer);
+        }
     }
+
+    printf("You left the chat. Bye.\n");
+    close(clientsock);
+    return 0;
 }

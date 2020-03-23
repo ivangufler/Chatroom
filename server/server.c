@@ -7,9 +7,11 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
-#include <stdio.h>
+#include "server.h"
 
 #define PORT 23456
+
+const int FLAGS = 0;
 
 int main(void) {
 
@@ -40,11 +42,13 @@ int main(void) {
     fds[0].fd = sock;
     fds[0].events = POLLIN;
 
-    const int FLAGS = 0;
+    const char exit[] = "/exit";
     int client = 0;
     int ret = 0;
 
     do {
+
+        int compress = 0;
 
         printf("Waiting on poll...\n");
         ret = poll(fds, nfds, -1);
@@ -117,29 +121,59 @@ int main(void) {
                         break;
                     }
 
-                    //received a message
-                    //send it to all other users
-
                     printf("   received: %s\n", buffer);
-                    for (int j = 1; j < currsize; j++) {
-                        if (fds[j].fd != fds[i].fd) {
-                            ret = send(fds[j].fd, buffer, strlen(buffer), FLAGS);
-                            printf("   r an %i: %i\n", fds[i].fd, ret);
-                        }
+
+                    if (strcmp(exit, buffer) == 0) {
+                        send(fds[i].fd, buffer, strlen(buffer), FLAGS);
+                        broadcast(fds, fds[i], "somebody left the chat", currsize);
+                        break;
                     }
+
+                    broadcast(fds, fds[i], buffer, currsize);
 
                 } while (1);
 
                 if (closeconn) {
                     close(fds[i].fd);
                     fds[i].fd = -1;
+                    compress = 1;
                 }
 
             }
 
         }
 
+        if (compress) {
+            for (int i = 0; i < nfds; i++) {
+                if (fds[i].fd == -1) {
+                    for(int j = i; j < nfds-1; j++) {
+                        fds[j].fd = fds[j+1].fd;
+                    }
+                    i--;
+                    nfds--;
+                }
+            }
+        }
+
+
     } while(1);
 
+    for (int i = 0; i < nfds; i++) {
+        if(fds[i].fd >= 0)
+            close(fds[i].fd);
+    }
+
     return 0;
+}
+
+
+void broadcast(struct pollfd *fds, struct pollfd actual, char *msg, int currsize) {
+
+    for (int j = 1; j < currsize; j++) {
+
+        if (fds[j].fd != actual.fd) {
+            int ret = send(fds[j].fd, msg, strlen(msg), FLAGS);
+            printf("   r an %i: %i\n", fds[j].fd, ret);
+        }
+    }
 }
