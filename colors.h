@@ -47,6 +47,6 @@
     static const int reverse = 7;
     static const int hidden = 8;
 
-    void color(char *text, int color, int background, int set);
+    void color(char *text, int set, int color, int background);
 
     #endif //CHATROOM_COLORS_H

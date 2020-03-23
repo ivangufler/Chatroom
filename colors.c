@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "colors.h"
 
-void color(char *text, int color, int background, int set) {
+void color(char *text, int set, int color, int background) {
 
     if (background == 0)
         background = 49;
