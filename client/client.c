@@ -36,17 +36,17 @@ int main (int argc, char *argv[]) {
 
     const int FLAGS = 0;
 
-    char name[64] = { 0 };
+    char name[128] = { 0 };
     printf("Hello, what's your name? ");
 
-    fgets(name, sizeof(name) - 1, stdin);
+    fgets(name, sizeof(name)-1, stdin);
     *strchr(name, '\n') = '\0';
 
     send(clientsock, name, strlen(name), FLAGS);
 
     if (fork() == 0) {
         char buffer[1024] = { 0 };
-        int ret = recv(clientsock, buffer, sizeof(buffer), FLAGS);
+        int ret = recv(clientsock, buffer, sizeof(buffer)-1, FLAGS);
         printf("%s\n", buffer);
     }
 
@@ -56,8 +56,8 @@ int main (int argc, char *argv[]) {
 
        while(1) {
 
-           char message[512] = { 0 };
-           fgets(message, sizeof(message) - 1, stdin);
+           char message[1024] = { 0 };
+           fgets(message, sizeof(message)-1, stdin);
            *strchr(message, '\n') = '\0';
 
            if (strcmp(exit, message) == 0) {
@@ -65,8 +65,6 @@ int main (int argc, char *argv[]) {
            }
 
            send(clientsock, message, strlen(message), FLAGS);
-
        }
     }
-
 }
