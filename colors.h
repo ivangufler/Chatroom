@@ -19,7 +19,6 @@
     static const char *magenta_c = "\033[0;35m";
     static const char *cyan_c = "\033[0;36m";
 
-    void bold(char *text);
     void red(char *text);
     void green(char *text);
     void yellow(char *text);

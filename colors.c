@@ -2,10 +2,6 @@
 #include "colors.h"
 
 
-void bold(char *text) {
-    printf("%s%s%s", bold_c, text, normal_c);
-}
-
 void red(char *text) {
     printf("%s%s%s", red_c, text, normal_c);
 }
