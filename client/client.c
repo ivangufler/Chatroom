@@ -45,30 +45,28 @@ int main (int argc, char *argv[]) {
     send(clientsock, name, strlen(name), FLAGS);
 
     if (fork() == 0) {
-
-        char exit[] = "exit";
-        while(1) {
-            char message[512] = { 0 };
-            fgets(message, sizeof(message) - 1, stdin);
-            *strchr(message, '\n') = '\0';
-
-            if (strcmp(exit, message) == 0) {
-                break;
-            }
-
-            send(clientsock, message, strlen(message), FLAGS);
-        }
+        char buffer[1024] = { 0 };
+        int ret = recv(clientsock, buffer, sizeof(buffer), FLAGS);
+        printf("%s\n", buffer);
     }
 
    else {
-       while (wait(NULL) != ((pid_t) - 1)) {
 
-           char buffer[1024] = { 0 };
-           recv(clientsock, buffer, sizeof(buffer), FLAGS);
-           printf("%s\n", buffer);
+       char exit[] = "exit";
+
+       while(1) {
+
+           char message[512] = { 0 };
+           fgets(message, sizeof(message) - 1, stdin);
+           *strchr(message, '\n') = '\0';
+
+           if (strcmp(exit, message) == 0) {
+               return 0;
+           }
+
+           send(clientsock, message, strlen(message), FLAGS);
+
        }
-       close(clientsock);
     }
 
-    return 0;
 }
