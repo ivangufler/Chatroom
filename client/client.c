@@ -12,9 +12,11 @@
 int main (int argc, char *argv[]) {
 
     if (argc < 2) {
-        custom(1, red_i, "Please enter an IP address: ./client [ip adress]\n");
+        printc("Please enter an IP address: ./client [ip adress]\n", bold, red_f, 0);
         exit(0);
     }
+
+    printf("Connecting... ");
 
     int clientsock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -26,22 +28,32 @@ int main (int argc, char *argv[]) {
     serv_addr.sin_port = htons(PORT);
     serv_addr.sin_family = AF_INET;
 
-    if(inet_pton(AF_INET, argv[1], &serv_addr.sin_addr) <= 0) {
-        printf("Error: No connection to the server could be established.\n");
+    value = inet_pton(AF_INET, argv[1], &serv_addr.sin_addr);
+
+    if(value <= 0 || connect(clientsock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+
+        printc("\nError: No connection to the server could be established.\n",
+                bold, red_f, 0);
         exit(0);
     }
 
-    connect(clientsock, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    printc("Success!\n", bold, green_f, 0);
 
     const int FLAGS = 0;
 
     char name[128] = { 0 };
-    printf("Hello, what's your name? ");
+    printc("Hello, what's your name? ", bold, default_f, 0);
 
     fgets(name, sizeof(name)-1, stdin);
     *strchr(name, '\n') = '\0';
 
     send(clientsock, name, strlen(name), FLAGS);
+
+    printf("\n");
+    int ret = 0;
+
+    printf("\033[96m");
+    fflush(stdout);
 
     int pid = fork();
     char exit[] = "/exit";
@@ -50,6 +62,9 @@ int main (int argc, char *argv[]) {
 
         while (1) {
             char message[1024] = { 0 };
+
+            printf("\033[96m");
+            fflush(stdout);
             fgets(message, sizeof(message), stdin);
             *strchr(message, '\n') = '\0';
 
@@ -65,21 +80,31 @@ int main (int argc, char *argv[]) {
     }
 
     else {
-        int status;
         while(1) {
 
             char buffer[1024] = {0};
-            recv(clientsock, buffer, sizeof(buffer), FLAGS);
+            ret = recv(clientsock, buffer, sizeof(buffer), FLAGS);
 
-            if (strcmp(exit, buffer) == 0) {
+            if (ret <= 0 || strcmp(exit, buffer) == 0) {
                 break;
             }
-
+            printf("\033[0m");
+            fflush(stdout);
             printf("%s\n", buffer);
+            printf("\033[96m");
+            fflush(stdout);
+        }
+
+        if (ret <= 0) {
+            printf("-> ");
+            printc("Oops! Lost connection to the server.\n", 1, red_f, 0);
+        }
+        else {
+            printf("-> ");
+            printc("You left the chat. Bye.\n", 1, lightyellow_f, 0);
         }
     }
 
-    printf("You left the chat. Bye.\n");
     close(clientsock);
     return 0;
 }

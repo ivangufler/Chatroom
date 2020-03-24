@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <poll.h>
@@ -7,11 +8,13 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
+#include <time.h>
 #include "server.h"
 
 #define PORT 23456
 
 const int FLAGS = 0;
+const int MAX_CONNECTIONS = 200;
 
 int main(void) {
 
@@ -34,15 +37,17 @@ int main(void) {
     int backlog = 5;
     listen(sock, backlog);
 
+    char *names[128] = { 0 };
+
     //poll components
-    struct pollfd fds[200];
+    struct pollfd fds[MAX_CONNECTIONS];
     int nfds = 1, currsize = 0;
 
     memset(fds, 0 , sizeof(fds));
     fds[0].fd = sock;
     fds[0].events = POLLIN;
 
-    const char exit[] = "/exit";
+    char exit[] = "/exit";
     int client = 0;
     int ret = 0;
 
@@ -87,6 +92,13 @@ int main(void) {
                         break;
                     }
 
+                    if (nfds == MAX_CONNECTIONS) {
+                        printf("   Maximum number of connections reached!");
+                        send(client, "\033[1;31mSorry, the chat room is full. Try again later.\033[0m",
+                                57, FLAGS);
+                        close(client);
+                        break;
+                    }
                     printf("   New connection - %i\n", client);
                     fds[nfds].fd = client;
                     fds[nfds].events = POLLIN;
@@ -106,6 +118,7 @@ int main(void) {
                 do {
                     char buffer[1024] = { 0 };
                     ret = recv(fds[i].fd, buffer, sizeof(buffer), FLAGS);
+                    char *tmp = calloc(strlen(buffer) + 150, sizeof(char));
 
                     if (ret < 0) {
                         if (errno != EWOULDBLOCK) {
@@ -117,6 +130,12 @@ int main(void) {
 
                     if (ret == 0) {
                         printf("   Connection to %i closed\n", fds[i].fd);
+                        strcpy(tmp, "-> ");
+                        strcat(tmp, names[i-1]);
+                        strcat(tmp, "left the chat\0");
+                        *strchr(tmp, ':') = ' ';
+                        broadcast(fds, fds[i], tmp, currsize);
+
                         closeconn = 1;
                         break;
                     }
@@ -125,17 +144,40 @@ int main(void) {
 
                     if (strcmp(exit, buffer) == 0) {
                         send(fds[i].fd, buffer, strlen(buffer), FLAGS);
-                        broadcast(fds, fds[i], "somebody left the chat", currsize);
                         break;
                     }
 
-                    broadcast(fds, fds[i], buffer, currsize);
+                    if (names[i - 1] == NULL) {
+                        names[i-1] = calloc(strlen(buffer) + 12, sizeof(char));
+
+                        char buf[9] = { 0 };
+                        int c = color();
+                        snprintf(buf, 9, "\033[1;%im", c);
+
+                        strcpy(names[i-1], buf);
+                        strcat(names[i - 1], buffer);
+                        strcat(names[i - 1], ":\033[0m");
+
+                        //printf("NAME: %s\n", names[i-1]);
+                        strcpy(tmp, "-> ");
+                        strcat(tmp, names[i-1]);
+                        *strchr(tmp, ':') = ' ';
+                        strcat(tmp, "is now online\0");
+                    }
+                    else {
+                        strcpy(tmp, names[i - 1]);
+                        strcat(tmp, " ");
+                        strcat(tmp, buffer);
+                        strcat(tmp, "\0");
+                    }
+                    broadcast(fds, fds[i], tmp, currsize);
 
                 } while (1);
 
                 if (closeconn) {
                     close(fds[i].fd);
                     fds[i].fd = -1;
+                    names[i - 4] = NULL;
                     compress = 1;
                 }
 
@@ -145,9 +187,18 @@ int main(void) {
 
         if (compress) {
             for (int i = 0; i < nfds; i++) {
+
                 if (fds[i].fd == -1) {
-                    for(int j = i; j < nfds-1; j++) {
+                    for(int j = i; j < nfds; j++) {
                         fds[j].fd = fds[j+1].fd;
+
+                        if (names[j] == NULL) {
+                            names[j-1] = NULL;
+                        }
+                        else {
+                            names[j-1] = calloc(strlen(names[j]), sizeof(char));
+                            strcpy(names[j-1], names[j]);
+                        }
                     }
                     i--;
                     nfds--;
@@ -166,6 +217,21 @@ int main(void) {
     return 0;
 }
 
+int color() {
+
+    // 32, 33, 34, 35, 92, 93, 94, 95
+    static int colors[8];
+    for (int i = 0; i < 4; i++) {
+        colors[i] = 32 + i;
+        colors[i + 4] = 92 + i;
+    }
+    time_t t;
+    srand(time(&t) + 5);
+    int i = rand() % 10;
+
+    return colors[i];
+
+}
 
 void broadcast(struct pollfd *fds, struct pollfd actual, char *msg, int currsize) {
 
