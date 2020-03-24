@@ -111,8 +111,10 @@ int main(void) {
                         char hostbuffer[256];
                         char *IPbuffer;
                         struct hostent *host_entry;
+                        int hostname;
 
                         // To retrieve hostname
+                        hostname = gethostname(hostbuffer, sizeof(hostbuffer));
                         host_entry = gethostbyname(hostbuffer);
 
                         IPbuffer = inet_ntoa(*((struct in_addr*)
