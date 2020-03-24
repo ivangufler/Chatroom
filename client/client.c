@@ -96,11 +96,11 @@ int main (int argc, char *argv[]) {
         }
 
         if (ret <= 0) {
-            printf("-> ");
+            printf("\033[0m-> ");
             printc("Oops! Lost connection to the server.\n", 1, red_f, 0);
         }
         else {
-            printf("-> ");
+            printf("\033[0m-> ");
             printc("You left the chat. Bye.\n", 1, lightyellow_f, 0);
         }
     }
