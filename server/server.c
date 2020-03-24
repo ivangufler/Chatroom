@@ -10,6 +10,9 @@
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <time.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include "server.h"
 
 #define PORT 23456
@@ -17,7 +20,12 @@
 const int FLAGS = 0;
 const int MAX_CONNECTIONS = 200;
 
+time_t begin;
+
+
 int main(void) {
+
+    begin = time(NULL);
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -87,11 +95,37 @@ int main(void) {
 
                 char buffer[64] = { 0 };
                 read(0, buffer, sizeof(buffer));
-                *strchr(buffer, '\n') = '\0';
 
-                if (strcmp(buffer, "stop") == 0) {
+                ret = command(buffer);
+
+                if (ret == 1) {
                     stop = 1;
                     break;
+                }
+
+                switch (ret) {
+                    case 2: {
+
+                        //Stats
+                        char hostbuffer[256];
+                        char *IPbuffer;
+                        struct hostent *host_entry;
+                        int hostname;
+
+                        // To retrieve hostname
+                        hostname = gethostname(hostbuffer, sizeof(hostbuffer));
+                        host_entry = gethostbyname(hostbuffer);
+
+                        IPbuffer = inet_ntoa(*((struct in_addr*)
+                                host_entry->h_addr_list[0]));
+
+                        printf("\tIt is running at %s (%s) on port %i\n",
+                                IPbuffer, hostbuffer, PORT);
+
+                    }
+                    case 3: {
+                        //Users
+                    }
                 }
                 continue;
             }
@@ -268,4 +302,44 @@ void broadcast(struct pollfd *fds, struct pollfd actual, char *msg, int currsize
             printf("   r an %i: %i\n", fds[j].fd, ret);
         }
     }
+}
+
+int command(char *command) {
+
+    int ret = 0;
+    *strchr(command, '\n') = '\0';
+
+    if (strcmp(command, "stop") == 0) {
+        return 1;
+    }
+    else if (strcmp(command, "stats") == 0) {
+
+        time_t end = time(NULL);
+
+        long hours = 0;
+        long minutes = 0;
+        long seconds = (end - begin);
+
+        minutes = seconds / 60;
+        seconds = seconds % 60;
+
+        hours = minutes / 60;
+        minutes = minutes % 60;
+        printf("\tThe server is online since %li hours, %li minutes, %li seconds\n",
+                hours, minutes, seconds);
+
+        return 2;
+
+    }
+    else if (strcmp(command, "users") == 0) {
+        return 3;
+    }
+    else if (strcmp(command, "help") == 0) {
+        printf("You can use the following commands:\n");
+        printf("   stop //stopping the server\n");
+        printf("   stats //showing how long the uptime of the server\n");
+        printf("   users //showing the online users\n");
+        printf("   help //showing this help page\n\n");
+    }
+    return 0;
 }
