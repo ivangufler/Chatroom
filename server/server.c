@@ -150,13 +150,16 @@ int main(void) {
                     if (curronline == 0) {
                         printf("\tThere is no user on the server.\n");
                     }
-                    //print all names of the online users
-                    for (int m = 0; m < curronline; m++) {
 
-                        char name[200] = { 0 };
-                        strcpy(name, names[m]);
-                        *strchr(name, ':') = '\n';
-                        printf("\t\t%i: %s", (m+1), name);
+                    //print all names of the online users
+                    for (int m = 0; m < currsize; m++) {
+
+                        if (names[m] != NULL) {
+                            char name[200] = { 0 };
+                            strcpy(name, names[m]);
+                            *strchr(name, ':') = '\n';
+                            printf("\t\t%i: %s", (m+1), name);
+                        }
                     }
 
                     //kick command
@@ -277,7 +280,7 @@ int main(void) {
                             strcat(tmp, names[i - 2]);
                             strcat(tmp, "left the chat\0");
                             *strchr(tmp, ':') = ' ';
-                            broadcast(fds, fds[i], tmp, currsize);
+                            broadcast(fds, fds[i], tmp, currsize, names);
                             curronline--;
                         }
                         closeconn = 1;
@@ -295,7 +298,6 @@ int main(void) {
                     if (names[i-2] == NULL) {
 
                         names[i-2] = calloc(strlen(buffer) + 12, sizeof(char));
-
                         //genereta randomly a color for the user
                         char buf[9] = { 0 };
                         int c = color();
@@ -311,6 +313,7 @@ int main(void) {
                         *strchr(tmp, ':') = ' ';
                         strcat(tmp, "is now online\0");
 
+                        printf("# INFO: (%i) %s\n", fds[i].fd-3, tmp);
                         //more users are online
                         total_logins++;
                         curronline++;
@@ -323,7 +326,7 @@ int main(void) {
                         strcat(tmp, "\0");
                     }
                     //send the message to all users
-                    broadcast(fds, fds[i], tmp, currsize);
+                    broadcast(fds, fds[i], tmp, currsize, names);
 
                 } while (1);
 
@@ -406,11 +409,11 @@ int color() {
  * The message is not send back to the sender, which
  * wrote the message msg.
  */
-void broadcast(struct pollfd *fds, struct pollfd sender, char *msg, int currsize) {
+void broadcast(struct pollfd *fds, struct pollfd sender, char *msg, int currsize, char **names) {
 
     for (int j = 2; j < currsize; j++) {
 
-        if (fds[j].fd != sender.fd) {
+        if (fds[j].fd != sender.fd && names[j-2] != NULL) {
             int ret = send(fds[j].fd, msg, strlen(msg), FLAGS);
         }
     }
