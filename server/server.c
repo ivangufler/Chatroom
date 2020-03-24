@@ -104,7 +104,12 @@ int main(void) {
 
                 ret = command(buffer);
 
-                if (ret == 1) {
+                if (ret == -1) {
+                    printf("\tThis command doesn't exist.\n");
+                    printf("\tType \"help\" for a list of all available commands.\n");
+                }
+
+                else if (ret == 1) {
                     stop = 1;
                     break;
                 }
@@ -134,6 +139,10 @@ int main(void) {
                     //Users
                     printf("\tActually, %i users are online:\n", curronline);
 
+                    if (curronline == 0) {
+                        printf("\tThere is no user on the server.\n");
+                    }
+
                     for (int m = 0; m < curronline; m++) {
 
                         char name[200] = { 0 };
@@ -142,44 +151,40 @@ int main(void) {
                         printf("\t\t%i: %s", (m+1), name);
                     }
 
-                    if (ret == 4) {
+                    if (ret == 4 && curronline > 0) {
 
-                        if (curronline == 0) {
-                            printf("\tThere is no user on the server.\n");
+                        int kick = 0;
+                        char c[8] = { 0 };
+
+                        write(1, "\033[0m\tWhich user should be kicked? ", 34);
+                        read(0, c, sizeof(c));
+                        *strchr(c, '\n') = '\0';
+
+                        kick = atoi(c);
+
+                        if (kick <= 0 || kick > curronline) {
+                            write(1, "ID not valid.\n", 14);
                         }
                         else {
-                            int kick = 0;
-                            char c[8] = { 0 };
 
-                            write(1, "\033[0m\tWhich user should be kicked? ", 34);
-                            read(0, c, sizeof(c));
-                            *strchr(c, '\n') = '\0';
+                            char name[200] = {0};
+                            strcpy(name, names[kick - 1]);
+                            *strchr(name, ':') = ' ';
 
-                            kick = atoi(c);
+                            write(1, "\t", 1);
+                            write(1, name, strlen(name));
+                            write(1, "(", 1);
+                            write(1, c, strlen(c));
 
-                            if (kick <= 0 || kick > curronline) {
-                                write(1, "ID not valid.\n", 14);
-                            }
-                            else {
+                            send(fds[kick+1].fd, "/exit",
+                                 5, FLAGS);
 
-                                char name[200] = {0};
-                                strcpy(name, names[kick - 1]);
-                                *strchr(name, ':') = ' ';
-
-                                write(1, "\t", 1);
-                                write(1, name, strlen(name));
-                                write(1, "(", 1);
-                                write(1, c, strlen(c));
-
-                                send(fds[kick+1].fd, "/exit",
-                                     5, FLAGS);
-
-                                compress = 1;
-                                close(fds[kick+1].fd);
-                                curronline--;
-                                write(1, ") was kicked off the server.\n", 29);
-                            }
+                            compress = 1;
+                            close(fds[kick+1].fd);
+                            curronline--;
+                            write(1, ") was kicked off the server.\n", 29);
                         }
+
                     }
                 }
                 continue;
@@ -364,11 +369,11 @@ void broadcast(struct pollfd *fds, struct pollfd actual, char *msg, int currsize
 
 int command(char *command) {
 
-    int ret = 0;
+    int ret = -1;
     *strchr(command, '\n') = '\0';
 
     if (strcmp(command, "stop") == 0) {
-        return 1;
+        ret = 1;
     }
     else if (strcmp(command, "stats") == 0) {
 
@@ -386,15 +391,15 @@ int command(char *command) {
         printf("\tThe server is online since %li hours, %li minutes, %li seconds\n",
                 hours, minutes, seconds);
 
-        return 2;
+        ret = 2;
 
     }
     else if (strcmp(command, "users") == 0) {
-        return 3;
+        ret = 3;
     }
 
     else if (strcmp(command, "kick") == 0) {
-        return 4;
+        ret = 4;
     }
     else if (strcmp(command, "help") == 0) {
         printf("You can use the following commands:\n");
@@ -403,6 +408,7 @@ int command(char *command) {
         printf("   users\t//showing the online users\n");
         printf("   kick \t//removing users from the server\n");
         printf("   help \t//showing this help page\n\n");
+        ret = 0;
     }
-    return 0;
+    return ret;
 }
