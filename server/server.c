@@ -46,7 +46,8 @@ int main(void) {
     int backlog = 5;
     listen(sock, backlog);
 
-    char *names[128] = { 0 };
+    char *names[200] = { 0 };
+    char *addresses[200] = { 0 };
 
     //poll components
     struct pollfd fds[MAX_CONNECTIONS];
@@ -110,10 +111,8 @@ int main(void) {
                         char hostbuffer[256];
                         char *IPbuffer;
                         struct hostent *host_entry;
-                        int hostname;
 
                         // To retrieve hostname
-                        hostname = gethostname(hostbuffer, sizeof(hostbuffer));
                         host_entry = gethostbyname(hostbuffer);
 
                         IPbuffer = inet_ntoa(*((struct in_addr*)
@@ -140,6 +139,7 @@ int main(void) {
                     socklen_t clientaddrlen;
                     client = accept(sock, &clientaddr, &clientaddrlen);
 
+
                     if (client < 0) {
                         if (errno != EWOULDBLOCK) {
                             //huge problem
@@ -158,6 +158,15 @@ int main(void) {
                     printf("   New connection - %i\n", client);
                     fds[nfds].fd = client;
                     fds[nfds].events = POLLIN;
+
+                    struct in_addr ipAddr = ((struct sockaddr_in*)&clientaddr)->sin_addr;
+                    char str[INET_ADDRSTRLEN];
+                    inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
+
+                    addresses[nfds-2] = calloc(128, sizeof(char));
+                    printf("%s\n", str);
+
+
                     nfds++;
 
                 } while (client != -1);
@@ -205,7 +214,9 @@ int main(void) {
                     }
 
                     if (names[i - 2] == NULL) {
+
                         names[i-2] = calloc(strlen(buffer) + 12, sizeof(char));
+
 
                         char buf[9] = { 0 };
                         int c = color();
