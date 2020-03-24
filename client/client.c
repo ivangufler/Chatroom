@@ -63,8 +63,6 @@ int main (int argc, char *argv[]) {
         while (1) {
             char message[1024] = { 0 };
 
-            printf("\033[96m");
-            fflush(stdout);
             fgets(message, sizeof(message), stdin);
             *strchr(message, '\n') = '\0';
 
@@ -95,12 +93,14 @@ int main (int argc, char *argv[]) {
             fflush(stdout);
         }
 
+        printf("\033[0m");
+        fflush(stdout);
+        printf("-> ");
+
         if (ret <= 0) {
-            printf("\033[0m-> ");
             printc("Oops! Lost connection to the server.\n", 1, red_f, 0);
         }
         else {
-            printf("\033[0m-> ");
             printc("You left the chat. Bye.\n", 1, lightyellow_f, 0);
         }
     }
