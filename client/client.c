@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#include <poll.h>
 
 #include "../colors.h"
 
@@ -50,59 +51,84 @@ int main (int argc, char *argv[]) {
     send(clientsock, name, strlen(name), FLAGS);
 
     printf("\n");
-    int ret = 0;
 
     printf("\033[96m");
     fflush(stdout);
 
-    int pid = fork();
     char exit[] = "/exit";
 
-    if (pid == 0) {
+    const int nfds = 2;
+    struct pollfd fds[nfds];
+    memset(fds, 0 , sizeof(fds));
 
-        while (1) {
-            char message[1024] = { 0 };
+    //save stdin in fd-array
+    fds[0].fd = 0;
+    fds[0].events = POLLIN;
 
-            fgets(message, sizeof(message), stdin);
-            *strchr(message, '\n') = '\0';
+    //save the socket in fd-array
+    fds[1].fd = clientsock;
+    fds[1].events = POLLIN;
 
-            if (strcmp(exit, message) == 0) {
-                send(clientsock, exit, strlen(exit), FLAGS);
-                break;
-            }
+    int ret = 0;
+    int stop = 0;
 
-            send(clientsock, message, strlen(message), FLAGS);
+    do {
+
+        ret = poll(fds, nfds, -1);
+
+        if (ret < 0) {
+            perror("# ERROR: poll failed");
+            break;
         }
 
+        for (int i = 0; i < nfds; i++) {
 
+            if (fds[i].revents == 0) {
+                continue;
+            }
+
+            char buffer[1024] = { 0 };
+
+            if (fds[i].fd == 0) {
+                //STDIN
+                read(0, buffer, sizeof(buffer));
+                *strchr(buffer, '\n') = '\0';
+
+                if (strcmp(exit, buffer) == 0) {
+                    send(clientsock, exit, strlen(exit), FLAGS);
+                    break;
+                }
+
+                send(clientsock, buffer, strlen(buffer), FLAGS);
+            }
+
+            else {
+                ret = recv(clientsock, buffer, sizeof(buffer), FLAGS);
+
+                if (ret <= 0 || strcmp(exit, buffer) == 0) {
+                    stop = 1;
+                    break;
+                }
+                printf("\033[0m");
+                fflush(stdout);
+                printf("%s\n", buffer);
+                printf("\033[96m");
+                fflush(stdout);
+            }
+        }
+
+    } while(stop == 0);
+
+
+    printf("\033[0m");
+    fflush(stdout);
+    printf("-> ");
+
+    if (ret <= 0) {
+        printc("Oops! Lost connection to the server.\n", 1, red_f, 0);
     }
-
     else {
-        while(1) {
-
-            char buffer[1024] = {0};
-            ret = recv(clientsock, buffer, sizeof(buffer), FLAGS);
-
-            if (ret <= 0 || strcmp(exit, buffer) == 0) {
-                break;
-            }
-            printf("\033[0m");
-            fflush(stdout);
-            printf("%s\n", buffer);
-            printf("\033[96m");
-            fflush(stdout);
-        }
-
-        printf("\033[0m");
-        fflush(stdout);
-        printf("-> ");
-
-        if (ret <= 0) {
-            printc("Oops! Lost connection to the server.\n", 1, red_f, 0);
-        }
-        else {
-            printc("You left the chat. Bye.\n", 1, lightyellow_f, 0);
-        }
+        printc("You left the chat. Bye.\n", 1, lightyellow_f, 0);
     }
 
     close(clientsock);
