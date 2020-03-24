@@ -6,14 +6,13 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <time.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include "server.h"
+#include "../colors.h"
 
 #define PORT 23456
 
@@ -24,6 +23,8 @@ time_t begin;
 
 
 int main(void) {
+
+    printf("Starting the server... ");
 
     begin = time(NULL);
 
@@ -47,11 +48,11 @@ int main(void) {
     listen(sock, backlog);
 
     char *names[200] = { 0 };
-    char *addresses[200] = { 0 };
+    int total_logins = 0;
 
     //poll components
     struct pollfd fds[MAX_CONNECTIONS];
-    int nfds = 2, currsize = 0;
+    int nfds = 2, currsize = 0, curronline = 0;
 
     memset(fds, 0 , sizeof(fds));
 
@@ -68,15 +69,17 @@ int main(void) {
     int stop = 0;
     int compress = 0;
 
+    printc("Success!\n", bold, green_f, 0);
+    printf("# INFO: Type \"help\" if you want to know more\n\n");
+
     do {
 
         compress = 0;
 
-        printf("Waiting on poll...\n");
         ret = poll(fds, nfds, -1);
 
         if (ret < 0) {
-            perror("poll failed");
+            perror("# ERROR: poll failed");
             break;
         }
 
@@ -88,7 +91,9 @@ int main(void) {
             }
 
             if (fds[i].revents != POLLIN) {
-                printf("   Error: descriptor %i, revents %i\n", fds[i].fd, fds[i].revents);
+                printf("# ERROR: descriptor %i, revents %i\n", fds[i].fd, fds[i].revents);
+                fds[i].fd = -1;
+                compress = 1;
                 break;
             }
 
@@ -104,28 +109,77 @@ int main(void) {
                     break;
                 }
 
-                switch (ret) {
-                    case 2: {
+                else if(ret == 2) {
 
-                        //Stats
-                        char hostbuffer[256];
-                        char *IPbuffer;
-                        struct hostent *host_entry;
-                        int hostname;
+                    //Stats
+                    char hostbuffer[256];
+                    char *IPbuffer;
+                    struct hostent *host_entry;
+                    int hostname;
 
-                        // To retrieve hostname
-                        hostname = gethostname(hostbuffer, sizeof(hostbuffer));
-                        host_entry = gethostbyname(hostbuffer);
+                    // To retrieve hostname
+                    hostname = gethostname(hostbuffer, sizeof(hostbuffer));
+                    host_entry = gethostbyname(hostbuffer);
 
-                        IPbuffer = inet_ntoa(*((struct in_addr*)
-                                host_entry->h_addr_list[0]));
+                    IPbuffer = inet_ntoa(*((struct in_addr *)
+                            host_entry->h_addr_list[0]));
 
-                        printf("\tIt is running at %s (%s) on port %i\n",
-                                IPbuffer, hostbuffer, PORT);
+                    printf("\tIt is running at %s (%s) on port %i\n",
+                           IPbuffer, hostbuffer, PORT);
 
+                    printf("\tThere have been %i logins since the server was started.\n",
+                           total_logins);
+                }
+                else if (ret > 2) {
+                    //Users
+                    printf("\tActually, %i users are online:\n", curronline);
+
+                    for (int m = 0; m < curronline; m++) {
+
+                        char name[200] = { 0 };
+                        strcpy(name, names[m]);
+                        *strchr(name, ':') = '\n';
+                        printf("\t\t%i: %s", (m+1), name);
                     }
-                    case 3: {
-                        //Users
+
+                    if (ret == 4) {
+
+                        if (curronline == 0) {
+                            printf("\tThere is no user on the server.\n");
+                        }
+                        else {
+                            int kick = 0;
+                            char c[8] = { 0 };
+
+                            write(1, "\033[0m\tWhich user should be kicked? ", 34);
+                            read(0, c, sizeof(c));
+                            *strchr(c, '\n') = '\0';
+
+                            kick = atoi(c);
+
+                            if (kick <= 0 || kick > curronline) {
+                                write(1, "ID not valid.\n", 14);
+                            }
+                            else {
+
+                                char name[200] = {0};
+                                strcpy(name, names[kick - 1]);
+                                *strchr(name, ':') = ' ';
+
+                                write(1, "\t", 1);
+                                write(1, name, strlen(name));
+                                write(1, "(", 1);
+                                write(1, c, strlen(c));
+
+                                send(fds[kick+1].fd, "/exit",
+                                     5, FLAGS);
+
+                                compress = 1;
+                                close(fds[kick+1].fd);
+                                curronline--;
+                                write(1, ") was kicked off the server.\n", 29);
+                            }
+                        }
                     }
                 }
                 continue;
@@ -133,7 +187,7 @@ int main(void) {
 
             if (fds[i].fd == sock) {
 
-                printf("   Ready for incoming connections\n");
+                printf("# INFO: Ready for incoming connections\n");
 
                 do {
 
@@ -151,24 +205,15 @@ int main(void) {
                     }
 
                     if (nfds == MAX_CONNECTIONS) {
-                        printf("   Maximum number of connections reached!");
+                        printf("# WARNING: Maximum number of connections reached!\n");
                         send(client, "\033[1;31mSorry, the chat room is full. Try again later.\033[0m",
                                 57, FLAGS);
                         close(client);
                         break;
                     }
-                    printf("   New connection - %i\n", client);
+                    printf("# INFO: New connection, id=%i\n", client-3);
                     fds[nfds].fd = client;
                     fds[nfds].events = POLLIN;
-
-                    struct in_addr ipAddr = ((struct sockaddr_in*)&clientaddr)->sin_addr;
-                    char str[INET_ADDRSTRLEN];
-                    inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
-
-                    addresses[nfds-2] = calloc(128, sizeof(char));
-                    printf("%s\n", str);
-
-
                     nfds++;
 
                 } while (client != -1);
@@ -177,7 +222,6 @@ int main(void) {
             else {
 
                 int closeconn = 0;
-                printf("   Ready for reading from descriptor %i\n", fds[i].fd);
 
                 //set recv function non blocking
                 fcntl(fds[i].fd, F_SETFL, fcntl(fds[i].fd, F_GETFL) | O_NONBLOCK);
@@ -197,18 +241,20 @@ int main(void) {
                     }
 
                     if (ret == 0) {
-                        printf("   Connection to %i closed\n", fds[i].fd);
-                        strcpy(tmp, "-> ");
-                        strcat(tmp, names[i-2]);
-                        strcat(tmp, "left the chat\0");
-                        *strchr(tmp, ':') = ' ';
-                        broadcast(fds, fds[i], tmp, currsize);
+                        printf("# INFO: Connection closed, id=%i\n", fds[i].fd-3);
 
+                        if (names[i - 2] != NULL) {
+
+                            strcpy(tmp, "-> ");
+                            strcat(tmp, names[i - 2]);
+                            strcat(tmp, "left the chat\0");
+                            *strchr(tmp, ':') = ' ';
+                            broadcast(fds, fds[i], tmp, currsize);
+                            curronline--;
+                        }
                         closeconn = 1;
                         break;
                     }
-
-                    printf("   received: %s\n", buffer);
 
                     if (strcmp(exit, buffer) == 0) {
                         send(fds[i].fd, buffer, strlen(buffer), FLAGS);
@@ -218,7 +264,6 @@ int main(void) {
                     if (names[i - 2] == NULL) {
 
                         names[i-2] = calloc(strlen(buffer) + 12, sizeof(char));
-
 
                         char buf[9] = { 0 };
                         int c = color();
@@ -232,6 +277,9 @@ int main(void) {
                         strcat(tmp, names[i-2]);
                         *strchr(tmp, ':') = ' ';
                         strcat(tmp, "is now online\0");
+
+                        total_logins++;
+                        curronline++;
                     }
                     else {
                         strcpy(tmp, names[i - 2]);
@@ -300,9 +348,7 @@ int color() {
     }
     time_t t;
     srand(time(&t) + 5);
-    int i = rand() % 10;
-
-    return colors[i];
+    return colors[(rand() % 8)];
 
 }
 
@@ -312,7 +358,6 @@ void broadcast(struct pollfd *fds, struct pollfd actual, char *msg, int currsize
 
         if (fds[j].fd != actual.fd) {
             int ret = send(fds[j].fd, msg, strlen(msg), FLAGS);
-            printf("   r an %i: %i\n", fds[j].fd, ret);
         }
     }
 }
@@ -347,12 +392,17 @@ int command(char *command) {
     else if (strcmp(command, "users") == 0) {
         return 3;
     }
+
+    else if (strcmp(command, "kick") == 0) {
+        return 4;
+    }
     else if (strcmp(command, "help") == 0) {
         printf("You can use the following commands:\n");
-        printf("   stop //stopping the server\n");
-        printf("   stats //showing how long the uptime of the server\n");
-        printf("   users //showing the online users\n");
-        printf("   help //showing this help page\n\n");
+        printf("   stop \t//stopping the server\n");
+        printf("   stats\t//showing some informations about the server\n");
+        printf("   users\t//showing the online users\n");
+        printf("   kick \t//removing users from the server\n");
+        printf("   help \t//showing this help page\n\n");
     }
     return 0;
 }
