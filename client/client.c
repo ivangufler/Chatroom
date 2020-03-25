@@ -98,8 +98,15 @@ int main (int argc, char *argv[]) {
                 read(0, buffer, sizeof(buffer));
                 *strchr(buffer, '\n') = '\0';
 
-                //send the input data to the server
-                send(clientsock, buffer, strlen(buffer), FLAGS);
+                //clear terminal if command was read
+                if (strcmp("/clear", buffer) == 0) {
+                    system("clear");
+                }
+                else {
+                    //send the input data to the server
+                    send(clientsock, buffer, strlen(buffer), FLAGS);
+                }
+
             }
             //there is data on the socket
             else {
