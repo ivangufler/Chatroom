@@ -158,9 +158,11 @@ int main(void) {
                             char name[200] = { 0 };
                             strcpy(name, names[m]);
                             *strchr(name, ':') = '\n';
-                            printf("\t\t%i: %s", (m+1), name);
+                            printf("\t\t%i: %s\033[0m", (m+1), name);
                         }
                     }
+
+
 
                     //kick command
                     if (ret == 4 && curronline > 0) {
