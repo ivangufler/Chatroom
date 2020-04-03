@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <poll.h>
 
-#include "../colors.h"
+#include "../colors/colors.h"
 
 #define PORT 23456
 

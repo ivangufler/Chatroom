@@ -12,7 +12,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include "server.h"
-#include "../colors.h"
+#include "../colors/colors.h"
 
 #define PORT 23456
 
