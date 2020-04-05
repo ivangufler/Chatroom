@@ -1,4 +1,6 @@
-server: server.o colors.o client
+chat: server client
+
+server: server.o colors.o
 	gcc -o server.out server/server.o colors/colors.o
 
 server.o: server/server.c server/server.h
