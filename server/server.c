@@ -162,7 +162,7 @@ int main(void) {
                         }
                     }
 
-                    write(1, "\033[0m", 6);
+                    write(1, "\033[0m", 4);
 
                     //kick command
                     if (ret == 4 && curronline > 0) {
