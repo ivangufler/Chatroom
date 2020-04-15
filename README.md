@@ -65,10 +65,10 @@ make clean
 
 ## Authors
 
-* **Filippo Costanzi** - [github/costanzifilippo](https://github.com/costanzifilippo)
 * **Ivan Gufler** - [github/ivangufler](https://github.com/ivangufler)
+* **Filippo Costanzi** - [github/costanzifilippo](https://github.com/costanzifilippo)
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/ivangufler/Chatroom/contributors) who participated in this project.
 
 ## License
 
