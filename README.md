@@ -68,7 +68,7 @@ make clean
 * **Ivan Gufler** - [github/ivangufler](https://github.com/ivangufler)
 * **Filippo Costanzi** - [github/costanzifilippo](https://github.com/costanzifilippo)
 
-See also the list of [contributors](https://github.com/ivangufler/Chatroom/contributors) who participated in this project.
+See the list of [contributors](https://github.com/ivangufler/Chatroom/contributors) who participated in this project.
 
 ## License
 
