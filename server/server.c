@@ -91,7 +91,7 @@ int main(void) {
             if (fds[i].revents == 0) {
                 continue;
             }
-            //something happend, but not POLLIN (read), close the connection
+            //something happened, but not POLLIN (read), close the connection
             if (fds[i].revents != POLLIN) {
                 printf("# ERROR: descriptor %i, revents %i\n", fds[i].fd, fds[i].revents);
                 fds[i].fd = -1;
@@ -109,7 +109,7 @@ int main(void) {
                 //handle command
                 ret = command(buffer);
 
-                //unexisting command
+                //not existing command
                 if (ret == -1) {
                     printf("\tThis command doesn't exist.\n");
                     printf("\tType \"help\" for a list of all available commands.\n");
@@ -300,7 +300,7 @@ int main(void) {
                     if (names[i-2] == NULL) {
 
                         names[i-2] = calloc(strlen(buffer) + 12, sizeof(char));
-                        //genereta randomly a color for the user
+                        //generate randomly a color for the user
                         char buf[9] = { 0 };
                         int c = color();
                         snprintf(buf, 9, "\033[1;%im", c);
@@ -320,7 +320,7 @@ int main(void) {
                         total_logins++;
                         curronline++;
                     }
-                    //add name to sended data if a name is saved
+                    //add name to sent data if a name is saved
                     else {
                         strcpy(tmp, names[i - 2]);
                         strcat(tmp, " ");
@@ -332,7 +332,7 @@ int main(void) {
 
                 } while (1);
 
-                //if closeconn was setted to 1
+                //if closeconn was set to 1
                 if (closeconn) {
                     //close the connection, delete fd and name
                     close(fds[i].fd);
@@ -354,7 +354,7 @@ int main(void) {
 
                         //move all elements forward by 1
                         fds[j].fd = fds[j+1].fd;
-                        //set name to null or use the one befor it
+                        //set name to null or use the one before it
                         if (names[j-1] == NULL) {
                             names[j-2] = NULL;
                         }
@@ -369,7 +369,7 @@ int main(void) {
             }
         }
 
-    //server is online until stop is setted to 1
+    //server is online until stop is set to 1
     } while(stop == 0);
 
     printf("Stopping the server... ");
@@ -389,7 +389,7 @@ int main(void) {
 /**
  * Return a color number for a new user.
  * The number is randomly selected from
- * a given array of numvers.
+ * a given array of numbers.
  * @return the color number
  */
 int color() {
@@ -467,7 +467,7 @@ int command(char *command) {
     else if (strcmp(command, "help") == 0) {
         printf("You can use the following commands:\n");
         printf("   stop \t//stopping the server\n");
-        printf("   stats\t//showing some informations about the server\n");
+        printf("   stats\t//showing some information about the server\n");
         printf("   users\t//showing the online users\n");
         printf("   kick \t//removing users from the server\n");
         printf("   help \t//showing this help page\n\n");

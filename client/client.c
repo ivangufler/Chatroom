@@ -12,9 +12,9 @@
 
 int main (int argc, char *argv[]) {
 
-    //ip adress as argument
+    //ip address as argument
     if (argc < 2) {
-        printc("Please enter an IP address: ./client [ip adress]\n", bold, red_f, 0);
+        printc("Please enter an IP address: ./client [ip address]\n", bold, red_f, 0);
         exit(0);
     }
 
@@ -125,7 +125,7 @@ int main (int argc, char *argv[]) {
                 fflush(stdout);
             }
         }
-    //until stop is setted to 1
+    //until stop is set to 1
     } while(stop == 0);
 
     //print an arrow
